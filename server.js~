@@ -106,7 +106,7 @@ sequelize.sync().then(function (err) {
 	console.log("Synced");
     app.get("/photo", getPhoto);
     // initializing a port
-    app.listen(port);
+    app.listen(5000);
 });
 
 
