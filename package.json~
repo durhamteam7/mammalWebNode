@@ -1,5 +1,5 @@
 {
-  "name": "sequelize_mammal_web",
+  "name": "mammal_web_node",
   "version": "1.0.0",
   "description": "App to run sequalize on mammalweb",
   "main": "index.js",
@@ -15,6 +15,7 @@
     "install": "^0.6.1",
     "mysql": "^2.10.2",
     "npm": "^3.8.5",
-    "sequelize": "^3.21.0"
+    "sequelize": "^3.21.0",
+    "cors": "^2.5.1",
   }
 }
