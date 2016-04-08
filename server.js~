@@ -120,7 +120,7 @@ var getPhoto = function(req,res){
       	//have to mannually filter number of animals
       	filteredPhotos = []
       	for(i in photos){
-      		if(photos[i].Animals.length >= 1){
+      		if(photos[i].Animals.length >= 1){      			
       			filteredPhotos.push(photos[i]);
       		}
       	}

@@ -113,14 +113,14 @@ var getPhoto = function(req,res){
 		where: {photo_id:2},
 		include: [
 		        {model: Site, as: Site.tableName},
-		        {model: Animal},
+		        //{model: Animal},
 		        {model: Classification,where:{species:22}}
 		    ]
       }).then(function(photos) {
       	//have to mannually filter number of animals
       	filteredPhotos = []
       	for(i in photos){
-      		if(photos[i].Animals.length >= 1){
+      		if(photos[i].Animals.length >= 1){      			
       			filteredPhotos.push(photos[i]);
       		}
       	}
