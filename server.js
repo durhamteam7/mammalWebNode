@@ -133,6 +133,7 @@ var getPhoto = function(req,res){
 sequelize.sync().then(function (err) {
 	console.log("Synced");
     app.get("/photo", getPhoto);
+    app.post("/photo", getPhoto);
     // initializing a port
     app.listen(port);
 });
