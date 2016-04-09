@@ -113,8 +113,8 @@ var getPhoto = function(req,res){
 		where: {photo_id:2},
 		include: [
 		        {model: Site, as: Site.tableName},
-		        {model: Animal},
-		        {model: Classification,where:{species:22}}
+		        //{model: Animal},
+		        {model: Classification,where:{}}
 		    ]
       }).then(function(photos) {
       	//have to mannually filter number of animals

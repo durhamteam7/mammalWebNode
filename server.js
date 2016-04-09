@@ -103,6 +103,17 @@ var Animal = sequelize.define("Animal", {
     species: Sequelize.INTEGER,
 });
 
+var Options = sequelize.define("Options", {
+    option_id: {
+      type:Sequelize.INTEGER,
+      primaryKey: true
+    },
+    struc: Sequelize.INTEGER,
+    option_name: Sequelize.INTEGER,
+    seq: Sequelize.INTEGER,
+    article_id: Sequelize.INTEGER
+});
+
 //Specify relations
 Photo.hasMany(Classification,{foreignKey: 'photo_id',otherKey:'photo_id'});
 Photo.hasMany(Animal,{foreignKey: 'photo_id',otherKey: 'photo_id'});
@@ -114,7 +125,7 @@ var getPhoto = function(req,res){
 		include: [
 		        {model: Site, as: Site.tableName},
 		        //{model: Animal},
-		        {model: Classification,where:{species:22}}
+		        {model: Classification,where:{}}
 		    ]
       }).then(function(photos) {
       	//have to mannually filter number of animals
@@ -129,11 +140,17 @@ var getPhoto = function(req,res){
 
 }
 
+var getOptions = function(req,res){
+  Options.findAll().then(function(options){
+    res.send(options);
+  });
+};
+
 //sync the model with the database
 sequelize.sync().then(function (err) {
 	console.log("Synced");
-    app.get("/photo", getPhoto);
     app.post("/photo", getPhoto);
+    app.get("/options", getOptions);
     // initializing a port
     app.listen(port);
 });
