@@ -129,13 +129,14 @@ var getPhoto = function(req,res){
 		    ]
       }).then(function(photos) {
       	//have to mannually filter number of animals
-      	filteredPhotos = []
+      	/*filteredPhotos = []
       	for(i in photos){
-      		if(photos[i].Animals.length >= 1){      			
+      		if(photos[i].Animals && photos[i].Animals.length >= 1){      			
       			filteredPhotos.push(photos[i]);
       		}
       	}
-    		res.send(filteredPhotos);
+    		res.send(filteredPhotos);*/
+        res.send(photos);
     });
 
 }
