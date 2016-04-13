@@ -86,7 +86,7 @@ var Classification = sequelize.define("Classification", {
     },
     photo_id: Sequelize.INTEGER,
     species: Sequelize.INTEGER
-});
+},{name: {plural: 'Classification'}});
 
 var Site = sequelize.define("Site", {
    site_id: {
