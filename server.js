@@ -4,6 +4,9 @@ var Sequelize = require("sequelize");
 var bodyParser = require("body-parser");
 var app = express();
 
+app.use(bodyParser.json()); // for parsing application/json
+app.use(bodyParser.urlencoded({ extended: false })); // for parsing application/x-www-form-urlencoded
+
 app.use(function(req, res, next) {
     var oneof = false;
     if(req.headers.origin) {
@@ -90,7 +93,15 @@ var Site = sequelize.define("Site", {
     	type:Sequelize.INTEGER,
     	primaryKey: true
     },
-   site_name: Sequelize.STRING
+   site_name: Sequelize.STRING,
+   person_id: Sequelize.INTEGER,
+   landuse_id: Sequelize.INTEGER,
+   habitat_id: Sequelize.INTEGER,
+   water_id: Sequelize.INTEGER,
+   purpose_id: Sequelize.INTEGER,
+   notes: Sequelize.STRING,
+   camera_id: Sequelize.INTEGER,
+   placement_id: Sequelize.INTEGER
 });
 
 var Animal = sequelize.define("Animal", {
@@ -119,13 +130,19 @@ Photo.hasMany(Classification,{foreignKey: 'photo_id',otherKey:'photo_id'});
 Photo.hasMany(Animal,{foreignKey: 'photo_id',otherKey: 'photo_id'});
 Photo.hasOne(Site,{foreignKey: 'site_id'});
 
+
 var getPhoto = function(req,res){
+
+  //Set the val field to the actual key
+  formQueryJSON(req.body)
+  console.log(req.body)
+
 	Photo.findAll({
-		where: {photo_id:2},
+		where: req.body["Photo"],
 		include: [
-		        {model: Site, as: Site.tableName},
+		        {model: Site, as: Site.tableName,where:req.body["Site"]},
 		        //{model: Animal},
-		        {model: Classification,where:{}}
+		        {model: Classification,where:req.body["Classification"]}
 		    ]
       }).then(function(photos) {
       	//have to mannually filter number of animals
@@ -140,6 +157,56 @@ var getPhoto = function(req,res){
     });
 
 }
+
+var formQueryJSON = function(obj){
+  if (!obj.hasOwnProperty("type")){
+    for (var key in obj){
+      obj[key] = formQueryJSON(obj[key]);
+      if (Object.keys(obj[key]).length === 0){
+        delete obj[key];
+      }
+    }
+  }
+  else{
+    if (obj["type"] == "slider"){
+      var min = obj["minValue"];
+      var ceil = obj["options"]["ceil"];
+      var max = obj["maxValue"];
+      var floor = obj["options"]["floor"];
+      obj = {};
+      if (min != floor){
+        obj["$gte"] = min;
+      }
+      if (max != ceil){
+        obj["$lte"] = max;
+      }
+    }
+    else if (obj["type"] == "dateTime"){
+      var min = obj["minValue"];
+      var max = obj["maxValue"];
+      obj = {};
+      if (min != ""){
+        obj["$gte"] = new Date(min);
+      }
+      if (max != ""){
+        obj["$lte"] = new Date(max);
+      }
+    }
+    else{
+      if (obj["value"].length != 0){
+        obj = obj["value"]; 
+      }
+      else{
+        obj = {}
+      }
+    }
+  }
+  return obj;
+
+}
+
+
+
 
 var getOptions = function(req,res){
   Options.findAll().then(function(options){

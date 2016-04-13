@@ -11,11 +11,12 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.15.0",
+    "cors": "^2.5.1",
+    "execsql": "0.0.3",
     "express": "^4.13.4",
     "install": "^0.6.1",
     "mysql": "^2.10.2",
     "npm": "^3.8.5",
-    "sequelize": "^3.21.0",
-    "cors": "^2.5.1"
+    "sequelize": "^3.21.0"
   }
 }
