@@ -132,19 +132,24 @@ Photo.hasOne(Site,{foreignKey: 'site_id'});
 
 
 var getPhoto = function(req,res){
-
   //Set the val field to the actual key
   formQueryJSON(req.body)
   console.log(req.body)
+  console.log(req.query.pageNum,req.query.pageSize)
 
-	Photo.findAll({
-		where: req.body["Photo"],
-		include: [
-		        {model: Site, as: Site.tableName,where:req.body["Site"]},
-		        //{model: Animal},
-		        {model: Classification,where:req.body["Classification"]}
-		    ]
-      }).then(function(photos) {
+  queryOptions = {
+    where: req.body["Photo"],
+    include: [
+            {model: Site, as: Site.tableName,where:req.body["Site"]},
+            //{model: Animal},
+            {model: Classification,where:req.body["Classification"]}
+        ],
+    offset: parseInt(req.query.pageNum)*parseInt(req.query.pageSize),
+    limit: parseInt(req.query.pageSize)
+  }
+
+
+	Photo.findAndCountAll(queryOptions).then(function(result) {
       	//have to mannually filter number of animals
       	/*filteredPhotos = []
       	for(i in photos){
@@ -153,7 +158,7 @@ var getPhoto = function(req,res){
       		}
       	}
     		res.send(filteredPhotos);*/
-        res.send(photos);
+        res.send(result);
     });
 
 }
