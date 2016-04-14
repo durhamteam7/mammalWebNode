@@ -85,7 +85,9 @@ var Classification = sequelize.define("Classification", {
     	primaryKey: true
     },
     photo_id: Sequelize.INTEGER,
-    species: Sequelize.INTEGER
+    species: Sequelize.INTEGER,
+    gender: Sequalize.INTEGER,
+    age: Sequalize.INTEGER,
 },{name: {plural: 'Classification'}});
 
 var Site = sequelize.define("Site", {
@@ -101,7 +103,10 @@ var Site = sequelize.define("Site", {
    purpose_id: Sequelize.INTEGER,
    notes: Sequelize.STRING,
    camera_id: Sequelize.INTEGER,
-   placement_id: Sequelize.INTEGER
+   placement_id: Sequelize.INTEGER,
+   evenness: Sequalize:INTEGER,
+   fraction_support: Sequalize.INTEGER,
+   fraction_blanks: Sequalize.INTEGER
 });
 
 var Animal = sequelize.define("Animal", {
