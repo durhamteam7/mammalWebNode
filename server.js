@@ -2,6 +2,8 @@
 var express = require("express");
 var Sequelize = require("sequelize");
 var bodyParser = require("body-parser");
+var geolib = require("geolib");
+var json2csv = require('json2csv'); 
 var app = express();
 
 app.use(bodyParser.json()); // for parsing application/json
@@ -90,7 +92,8 @@ var Classification = sequelize.define("Classification", {
     age: Sequelize.INTEGER,
     evenness: Sequelize.INTEGER,
     fraction_support: Sequelize.INTEGER,
-    fraction_blanks: Sequelize.INTEGER
+    fraction_blanks: Sequelize.INTEGER,
+    number_of_classifications: Sequelize.INTEGER
 },{name: {plural: 'Classification'}});
 
 var Site = sequelize.define("Site", {
@@ -106,7 +109,9 @@ var Site = sequelize.define("Site", {
    purpose_id: Sequelize.INTEGER,
    notes: Sequelize.STRING,
    camera_id: Sequelize.INTEGER,
-   placement_id: Sequelize.INTEGER  
+   placement_id: Sequelize.INTEGER,
+   lat: Sequelize.FLOAT,
+   lon: Sequelize.FLOAT  
 });
 
 var Animal = sequelize.define("Animal", {
@@ -140,7 +145,14 @@ var getPhoto = function(req,res){
   //Set the val field to the actual key
   formQueryJSON(req.body)
   console.log(req.body)
-  console.log(req.query.pageNum,req.query.pageSize)
+  //console.log(req.query.pageNum,req.query.pageSize)
+
+  offsetValue = null;
+  limitValue = null;
+  if (parseInt(req.query.pageNum) && parseInt(req.query.pageSize) && parseInt(req.query.pageSize)){
+    offsetValue = parseInt(req.query.pageNum)*parseInt(req.query.pageSize);
+    limit: parseInt(req.query.pageSize)
+  }
 
   queryOptions = {
     where: req.body["Photo"],
@@ -149,8 +161,8 @@ var getPhoto = function(req,res){
             //{model: Animal},
             {model: Classification,where:req.body["Classification"]}
         ],
-    offset: parseInt(req.query.pageNum)*parseInt(req.query.pageSize),
-    limit: parseInt(req.query.pageSize)
+    offset: offsetValue,
+    limit: limitValue
   }
 
 
@@ -163,12 +175,117 @@ var getPhoto = function(req,res){
       		}
       	}
     		res.send(filteredPhotos);*/
-        res.send(result);
+        console.log(req.query.output)
+        result = JSON.parse(JSON.stringify(result))
+        if (req.query.output=="csv"){
+          console.log(result)
+          console.log("hath taketh the funtion")        
+          json2csv({ data: result.rows,flatten:true}, function(err, csv) {
+            if (err) console.log(err)
+            console.log(csv);
+            res.send(csv);
+          });
+        }
+        else{
+          console.log(result)
+          res.send(result);
+        }
     });
 
 }
 
+
+
+
 var formQueryJSON = function(obj){
+  for (var key in obj){
+    if (typeof obj[key] == "object" && !obj[key].hasOwnProperty("type")){
+        obj[key] = formQueryJSON(obj[key]);
+    }
+    else{
+    if (obj[key]["type"] == "slider"){
+      var min = obj[key]["minValue"];
+      var ceil = obj[key]["options"]["ceil"];
+      var max = obj[key]["maxValue"];
+      var floor = obj[key]["options"]["floor"];
+      obj[key] = {};
+      if (min != floor){
+        obj[key]["$gte"] = min;
+      }
+      if (max != ceil){
+        obj[key]["$lte"] = max;
+      }
+    }
+    else if (obj[key]["type"] == "dateTime"){
+      var min = obj[key]["minValue"];
+      var max = obj[key]["maxValue"];
+      obj[key] = {};
+      if (min != ""){
+        obj[key]["$gte"] = new Date(min);
+      }
+      if (max != ""){
+        obj[key]["$lte"] = new Date(max);
+      }
+    }
+    else if (obj[key]["type"] == "coord"){
+      if (obj[key]["value"] != null && key == "lat"){
+        var radius = 50000;
+
+        coordType = obj[key]["coordType"];
+        var initialPoint = {lat: obj["lat"]["value"], lon: obj["lon"]["value"]}
+        var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
+
+        console.log("INIT",initialPoint)
+        console.log(newPoints);
+        obj[key] = {};
+        obj[key]["$gte"] = newPoints[0][coordType];
+        obj[key]["$lte"] = newPoints[1][coordType];
+      }
+      else{
+        obj[key] = {};
+      }
+    }
+    else{
+      if (obj[key]["value"].length != 0){
+        obj[key] = obj[key]["value"]; 
+      }
+      else{
+        obj[key] = {}
+      }
+    }
+  }
+  }
+  //console.log(obj)
+  for (var key in obj){
+    if (Object.keys(obj[key]).length === 0){
+      delete obj[key];
+    }
+  }
+  return obj
+
+
+  }
+
+var getOptions = function(req,res){
+  Options.findAll().then(function(options){
+    res.send(options);
+  });
+};
+
+//sync the model with the database
+sequelize.sync().then(function (err) {
+	console.log("Synced");
+    app.post("/photo", getPhoto);
+    app.get("/options", getOptions);
+    // initializing a port
+    app.listen(port);
+});
+
+
+
+
+
+/*var formQueryJSON = function(obj){
   if (!obj.hasOwnProperty("type")){
     for (var key in obj){
       obj[key] = formQueryJSON(obj[key]);
@@ -202,6 +319,31 @@ var formQueryJSON = function(obj){
         obj["$lte"] = new Date(max);
       }
     }
+    else if (obj["type"] == "coord"){
+      if (obj["value"] != null){
+        var radius = 50000;
+        var coordType = obj["coordType"];
+        if (obj["coordType"] == "latitude"){
+          var initialPoint = {lat: obj["value"], lon: -0.1}
+          var initialPoint = {lat:54.77524999999999,lon:-1.5857361512621808}
+          var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
+        } 
+        else{
+          var initialPoint = {lat: 54, lon: obj["value"]}
+          var initialPoint = {lat:54.77524999999999,lon:-1.5857361512621808}
+          var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
+        }
+        console.log("INIT",initialPoint)
+        console.log(newPoints);
+        obj = {};
+        obj["$gte"] = newPoints[0][coordType];
+        obj["$lte"] = newPoints[1][coordType];
+      }
+      else{
+        obj = {};
+      }
+
+    }
     else{
       if (obj["value"].length != 0){
         obj = obj["value"]; 
@@ -213,24 +355,5 @@ var formQueryJSON = function(obj){
   }
   return obj;
 
-}
-
-
-
-
-var getOptions = function(req,res){
-  Options.findAll().then(function(options){
-    res.send(options);
-  });
-};
-
-//sync the model with the database
-sequelize.sync().then(function (err) {
-	console.log("Synced");
-    app.post("/photo", getPhoto);
-    app.get("/options", getOptions);
-    // initializing a port
-    app.listen(port);
-});
-
+}*/
 

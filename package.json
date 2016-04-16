@@ -14,7 +14,9 @@
     "cors": "^2.5.1",
     "execsql": "0.0.3",
     "express": "^4.13.4",
+    "geolib": "^2.0.20",
     "install": "^0.6.1",
+    "json2csv": "^2.2.0",
     "mysql": "^2.10.2",
     "npm": "^3.8.5",
     "sequelize": "^3.21.0"
