@@ -5,7 +5,7 @@ var execsql = require('execsql'),
 		password: 'aliSwans0n'
 	},
 	sql = 'use mammalweb;',
-	sqlFile = __dirname + '/Animal.sql';
+	sqlFile = __dirname + '/Photo.sql';
 execsql.config(dbConfig)
 	.exec(sql)
 	.execFile(sqlFile, function(err, results){

@@ -4,6 +4,7 @@ var Sequelize = require("sequelize");
 var bodyParser = require("body-parser");
 var geolib = require("geolib");
 var json2csv = require('json2csv'); 
+var flatten = require('flat')
 var app = express();
 
 app.use(bodyParser.json()); // for parsing application/json
@@ -53,6 +54,7 @@ var sequelize = new Sequelize('mammalweb', 'mammalweb', 'aliSwans0n', {
   	freezeTableName: true,
   	timestamps: false
   },
+  logging:false
 
 
 });
@@ -144,15 +146,18 @@ Photo.hasOne(Site,{foreignKey: 'site_id'});
 var getPhoto = function(req,res){
   //Set the val field to the actual key
   formQueryJSON(req.body)
-  console.log(req.body)
+  //console.log(req.body)
   //console.log(req.query.pageNum,req.query.pageSize)
 
   offsetValue = null;
   limitValue = null;
-  if (parseInt(req.query.pageNum) && parseInt(req.query.pageSize) && parseInt(req.query.pageSize)){
-    offsetValue = parseInt(req.query.pageNum)*parseInt(req.query.pageSize);
-    limit: parseInt(req.query.pageSize)
+
+  if (!(req.query.hasOwnProperty("output") && req.query.output == "csv")){
+    offsetValue = (parseInt(req.query.pageNum)-1)*parseInt(req.query.pageSize);
+    console.log(req.query.pageNum,req.query.pageSize)
+    limitValue = parseInt(req.query.pageSize)
   }
+
 
   queryOptions = {
     where: req.body["Photo"],
@@ -175,19 +180,23 @@ var getPhoto = function(req,res){
       		}
       	}
     		res.send(filteredPhotos);*/
-        console.log(req.query.output)
-        result = JSON.parse(JSON.stringify(result))
+        //console.log(req.query.output)
         if (req.query.output=="csv"){
+          result = JSON.parse(JSON.stringify(result))
           console.log(result)
-          console.log("hath taketh the funtion")        
-          json2csv({ data: result.rows,flatten:true}, function(err, csv) {
+          for (i in result.rows){
+            result.rows[i] = flatten(result.rows[i])
+          }
+          //console.log(result.rows)
+          //console.log("hath taketh the funtion")        
+          json2csv({ data: result.rows}, function(err, csv) {
             if (err) console.log(err)
-            console.log(csv);
+            //console.log(csv);
             res.send(csv);
           });
         }
         else{
-          console.log(result)
+          //console.log(result)
           res.send(result);
         }
     });
