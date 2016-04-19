@@ -158,11 +158,23 @@ var getPhoto = function(req,res){
     limitValue = parseInt(req.query.pageSize)
   }
 
+  classification = {}
+  console.log(req.body["Classification"],!req.body["Classification"])
   if(!req.body["Classification"]){
     req.body["Classification"] = {
       classification_id:{$ne: null}
     }
   }
+  else{
+    classification["$in"] = req.body["Classification"].species;
+  }
+
+  classification["$notIn"] = [86,96,97]; //Remove blank and unknown
+  req.body["Classification"].species = classification;
+    console.log(req.body["Classification"])
+  /*req.body["Classification"] = {
+      species:{$ne: 96}
+    }*/
 
 
   queryOptions = {
