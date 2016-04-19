@@ -140,7 +140,7 @@ var Options = sequelize.define("Options", {
 //Specify relations
 Photo.hasMany(Classification,{foreignKey: 'photo_id',otherKey:'photo_id'});
 Photo.hasMany(Animal,{foreignKey: 'photo_id',otherKey: 'photo_id'});
-Photo.hasOne(Site,{foreignKey: 'site_id'});
+Photo.belongsTo(Site,{foreignKey: 'site_id'});
 
 
 var getPhoto = function(req,res){
@@ -158,11 +158,17 @@ var getPhoto = function(req,res){
     limitValue = parseInt(req.query.pageSize)
   }
 
+  if(!req.body["Classification"]){
+    req.body["Classification"] = {
+      classification_id:{$ne: null}
+    }
+  }
+
 
   queryOptions = {
     where: req.body["Photo"],
     include: [
-            {model: Site, as: Site.tableName,where:req.body["Site"]},
+            {model: Site,where:req.body["Site"]},
             //{model: Animal},
             {model: Classification,where:req.body["Classification"]}
         ],
@@ -183,7 +189,7 @@ var getPhoto = function(req,res){
         //console.log(req.query.output)
         if (req.query.output=="csv"){
           result = JSON.parse(JSON.stringify(result))
-          console.log(result)
+          if (result.length > 0){
           for (i in result.rows){
             result.rows[i] = flatten(result.rows[i])
           }
@@ -194,6 +200,10 @@ var getPhoto = function(req,res){
             //console.log(csv);
             res.send(csv);
           });
+        }
+        else{
+          res.send("")
+        }
         }
         else{
           //console.log(result)
@@ -238,7 +248,7 @@ var formQueryJSON = function(obj){
     }
     else if (obj[key]["type"] == "coord"){
       if (obj[key]["value"] != null && key == "lat"){
-        var radius = 50000;
+        var radius = 500000;
 
         coordType = obj[key]["coordType"];
         var initialPoint = {lat: obj["lat"]["value"], lon: obj["lon"]["value"]}
