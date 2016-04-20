@@ -159,7 +159,6 @@ var getPhoto = function(req,res){
   }
 
   classification = {}
-  console.log(req.body["Classification"],!req.body["Classification"])
   if(!req.body["Classification"]){
     req.body["Classification"] = {
       classification_id:{$ne: null}
@@ -169,9 +168,17 @@ var getPhoto = function(req,res){
     classification["$in"] = req.body["Classification"].species;
   }
 
+  if ((req.query.hasOwnProperty("sequence") && req.query.sequence == "true")){
+    console.log("SEQUENCE MODE")
+    //To only include sequence
+    if(!req.body["Photo"]){
+      req.body["Photo"] = {}
+    }
+    req.body["Photo"]["sequence_num"] = 1;
+  }
+
   classification["$notIn"] = [86,96,97]; //Remove blank and unknown
   req.body["Classification"].species = classification;
-    console.log(req.body["Classification"])
   /*req.body["Classification"] = {
       species:{$ne: 96}
     }*/
