@@ -198,17 +198,30 @@ var getPhoto = function(req,res){
 
 	Photo.findAndCountAll(queryOptions).then(function(result) {
       	//have to mannually filter number of animals
-      	/*filteredPhotos = []
-      	for(i in photos){
+      	filteredPhotos = []
+      	/*for(i in photos){
       		if(photos[i].Animals && photos[i].Animals.length >= 1){      			
       			filteredPhotos.push(photos[i]);
       		}
-      	}
-    		res.send(filteredPhotos);*/
+      	}*/
+
+        photos = JSON.parse(JSON.stringify(result)).rows
+        for(i in photos){
+          photos[i].Photo = {};
+          for (key in photos[i]){
+            if (!(typeof photos[i][key] == "object" || typeof photos[i][key] == "array") ){
+              //console.log(key)
+              photos[i]["Photo"][key] = photos[i][key];
+              delete photos[i][key];
+            }
+          }
+          filteredPhotos.push(photos[i]);
+        }
+        result.rows = filteredPhotos;
+    		//res.send(filteredPhotos);
         //console.log(req.query.output)
         if (req.query.output=="csv"){
-          result = JSON.parse(JSON.stringify(result))
-          if (result.length > 0){
+          if (result.rows.length > 0){
           for (i in result.rows){
             result.rows[i] = flatten(result.rows[i])
           }
