@@ -137,6 +137,17 @@ var Options = sequelize.define("Options", {
     article_id: Sequelize.INTEGER
 });
 
+var PersonStats = sequelize.define("PersonStats", {
+    person_id: {
+      type:Sequelize.INTEGER,
+      primaryKey: true
+    },
+    species_rate: Sequelize.FLOAT,
+    age_rate: Sequelize.FLOAT,
+    gender_rate: Sequelize.FLOAT,
+    number_rate: Sequelize.FLOAT
+});
+
 //Specify relations
 Photo.hasMany(Classification,{foreignKey: 'photo_id',otherKey:'photo_id'});
 Photo.hasMany(Animal,{foreignKey: 'photo_id',otherKey: 'photo_id'});
@@ -247,6 +258,13 @@ var getPhoto = function(req,res){
 
 
 
+var getPersonStats = function(req,res){
+  PersonStats.findAndCountAll({}).then(function(result) {
+    res.send(result);
+  });
+}
+
+
 
 var formQueryJSON = function(obj){
   for (var key in obj){
@@ -327,6 +345,7 @@ var getOptions = function(req,res){
 sequelize.sync().then(function (err) {
 	console.log("Synced");
     app.post("/photo", getPhoto);
+    app.get("/persons", getPersonStats);
     app.get("/options", getOptions);
     // initializing a port
     app.listen(port);
