@@ -163,7 +163,7 @@ var getPhoto = function(req,res){
   offsetValue = null;
   limitValue = null;
 
-  if (!(req.query.hasOwnProperty("output") && req.query.output == "csv")){
+  if (!(req.query.hasOwnProperty("output") && req.query.output == "csv") && (req.query.hasOwnProperty("pageNum")&& req.query.hasOwnProperty("pageSize"))){
     offsetValue = (parseInt(req.query.pageNum)-1)*parseInt(req.query.pageSize);
     console.log(req.query.pageNum,req.query.pageSize)
     limitValue = parseInt(req.query.pageSize)
