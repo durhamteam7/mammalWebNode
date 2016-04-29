@@ -1,10 +1,19 @@
-// get dependencies
+/**
+* @fileOverview
+* @author Team 7
+* @version 0.8
+*/
+
+
 var express = require("express");
 var Sequelize = require("sequelize");
 var bodyParser = require("body-parser");
 var geolib = require("geolib");
-var json2csv = require('json2csv'); 
-var flatten = require('flat')
+var json2csv = require('json2csv');
+var flatten = require('flat');
+
+
+
 var app = express();
 
 app.use(bodyParser.json()); // for parsing application/json
@@ -111,9 +120,10 @@ var Site = sequelize.define("Site", {
    purpose_id: Sequelize.INTEGER,
    notes: Sequelize.STRING,
    camera_id: Sequelize.INTEGER,
+   camera_height: Sequelize.INTEGER,
    placement_id: Sequelize.INTEGER,
    lat: Sequelize.FLOAT,
-   lon: Sequelize.FLOAT  
+   lon: Sequelize.FLOAT
 });
 
 var Animal = sequelize.define("Animal", {
@@ -154,187 +164,199 @@ Photo.hasMany(Animal,{foreignKey: 'photo_id',otherKey: 'photo_id'});
 Photo.belongsTo(Site,{foreignKey: 'site_id'});
 
 
-var getPhoto = function(req,res){
-  //Set the val field to the actual key
-  formQueryJSON(req.body)
-  //console.log(req.body)
-  //console.log(req.query.pageNum,req.query.pageSize)
 
+var getPhoto = function(req,res){
+
+
+  formQueryJSON(req.body);
+
+  //Set paging parameters if they were passed
   offsetValue = null;
   limitValue = null;
-
   if (!(req.query.hasOwnProperty("output") && req.query.output == "csv") && (req.query.hasOwnProperty("pageNum")&& req.query.hasOwnProperty("pageSize"))){
     offsetValue = (parseInt(req.query.pageNum)-1)*parseInt(req.query.pageSize);
-    console.log(req.query.pageNum,req.query.pageSize)
-    limitValue = parseInt(req.query.pageSize)
+    console.log(req.query.pageNum,req.query.pageSize);
+    limitValue = parseInt(req.query.pageSize);
   }
 
-  classification = {}
-  if(!req.body["Classification"]){
-    req.body["Classification"] = {
+  //Hide unclassified images
+  classification = {};
+  if(!req.body.Classification){
+    req.body.Classification = {
       classification_id:{$ne: null}
-    }
+    };
   }
   else{
-    classification["$in"] = req.body["Classification"].species;
+    classification.$in = req.body.Classification.species;
   }
 
+  //Deal with parameter for switching between sequence and photo
   if ((req.query.hasOwnProperty("sequence") && req.query.sequence == "true")){
-    console.log("SEQUENCE MODE")
-    //To only include sequence
-    if(!req.body["Photo"]){
-      req.body["Photo"] = {}
+    console.log("SEQUENCE MODE");
+    //Deal with sequences by only returning photos which are first in a sequence
+    if(!req.body.Photo){
+      req.body.Photo = {};
     }
-    req.body["Photo"]["sequence_num"] = 1;
+    req.body.Photo.sequence_num = 1;
   }
 
-  classification["$notIn"] = [86,96,97]; //Remove blank and unknown
-  req.body["Classification"].species = classification;
-  /*req.body["Classification"] = {
-      species:{$ne: 96}
-    }*/
+  classification.$notIn = [86,96,97]; //Remove blank and unknown
+  req.body.Classification.species = classification;
 
-
+  //Build query JSON
   queryOptions = {
-    where: req.body["Photo"],
+    where: req.body.Photo,
     include: [
-            {model: Site,where:req.body["Site"]},
-            //{model: Animal},
-            {model: Classification,where:req.body["Classification"]}
+            {model: Site,where:req.body.Site},
+            {model: Classification,where:req.body.Classification}
         ],
     offset: offsetValue,
     limit: limitValue
-  }
+  };
 
-
+  //Run sequlize query
 	Photo.findAndCountAll(queryOptions).then(function(result) {
-      	//have to mannually filter number of animals
-      	filteredPhotos = []
-      	/*for(i in photos){
-      		if(photos[i].Animals && photos[i].Animals.length >= 1){      			
-      			filteredPhotos.push(photos[i]);
-      		}
-      	}*/
+      	filteredPhotos = [];
 
-        photos = JSON.parse(JSON.stringify(result)).rows
-        for(i in photos){
+        //Remove sequalize's metadata
+        photos = JSON.parse(JSON.stringify(result)).rows;
+
+        //Normalize JSON structure so we can access any field by tableName.fieldName
+        for(var i in photos){
           photos[i].Photo = {};
-          for (key in photos[i]){
+          for (var key in photos[i]){
             if (!(typeof photos[i][key] == "object" || typeof photos[i][key] == "array") ){
               //console.log(key)
-              photos[i]["Photo"][key] = photos[i][key];
+              photos[i].Photo[key] = photos[i][key];
               delete photos[i][key];
             }
           }
           filteredPhotos.push(photos[i]);
         }
         result.rows = filteredPhotos;
-    		//res.send(filteredPhotos);
-        //console.log(req.query.output)
-        if (req.query.output=="csv"){
+
+        if (req.query.output=="csv"){ //CSV mode
           if (result.rows.length > 0){
-          for (i in result.rows){
-            result.rows[i] = flatten(result.rows[i])
+          for (var i in result.rows){
+            result.rows[i] = flatten(result.rows[i]);
           }
-          //console.log(result.rows)
-          //console.log("hath taketh the funtion")        
           json2csv({ data: result.rows}, function(err, csv) {
-            if (err) console.log(err)
-            //console.log(csv);
+            if (err) console.log(err);
             res.send(csv);
           });
         }
         else{
-          res.send("")
+          res.send("");
         }
         }
         else{
-          //console.log(result)
           res.send(result);
         }
     });
 
-}
+};
 
 
-
+/** Returns personStats object
+   * @param {object} req  request object
+   * @param {object} res  response object
+   * @returns {object} Array of personStats objects
+*/
 var getPersonStats = function(req,res){
   PersonStats.findAndCountAll({}).then(function(result) {
     res.send(result);
   });
-}
+};
 
 
-
+/** Converts filter object into Sequalize query
+   * @param {object} obj  filter object from client side
+   * @returns {object} sequalize query object
+*/
 var formQueryJSON = function(obj){
   for (var key in obj){
     if (typeof obj[key] == "object" && !obj[key].hasOwnProperty("type")){
+        //Recurse if the key is iself a valid object
         obj[key] = formQueryJSON(obj[key]);
     }
     else{
-    if (obj[key]["type"] == "slider"){
-      var min = obj[key]["minValue"];
-      var ceil = obj[key]["options"]["ceil"];
-      var max = obj[key]["maxValue"];
-      var floor = obj[key]["options"]["floor"];
-      obj[key] = {};
-      if (min != floor){
-        obj[key]["$gte"] = min;
-      }
-      if (max != ceil){
-        obj[key]["$lte"] = max;
-      }
-    }
-    else if (obj[key]["type"] == "dateTime"){
-      var min = obj[key]["minValue"];
-      var max = obj[key]["maxValue"];
-      obj[key] = {};
-      if (min != ""){
-        obj[key]["$gte"] = new Date(min);
-      }
-      if (max != ""){
-        obj[key]["$lte"] = new Date(max);
-      }
-    }
-    else if (obj[key]["type"] == "coord"){
-      if (obj[key]["value"] != null && key == "lat"){
-        var radius = 500000;
+      //Deal with cases for each filter type
+      if (obj[key].type == "slider"){
 
-        coordType = obj[key]["coordType"];
-        var initialPoint = {lat: obj["lat"]["value"], lon: obj["lon"]["value"]}
-        var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
+        //store values in temp variables
+        var min = obj[key].minValue;
+        var ceil = obj[key].options.ceil;
+        var max = obj[key].maxValue;
+        var floor = obj[key].options.floor;
 
-        console.log("INIT",initialPoint)
-        console.log(newPoints);
+        //Restructure object
         obj[key] = {};
-        obj[key]["$gte"] = newPoints[0][coordType];
-        obj[key]["$lte"] = newPoints[1][coordType];
+        if (min != floor){ //if min is set
+          obj[key].$gte = min;
+        }
+        if (max != ceil){ //if max is set
+          obj[key].$lte = max;
+        }
       }
-      else{
+      else if (obj[key].type == "dateTime"){
+
+        //store values in temp variables
+        var min = obj[key].minValue;
+        var max = obj[key].maxValue;
+
+        //restructure object
         obj[key] = {};
+        if (min !== ""){ //if min set
+          obj[key].$gte = new Date(min);
+        }
+        if (max !== ""){ //if max set
+          obj[key].$lte = new Date(max);
+        }
       }
-    }
-    else{
-      if (obj[key]["value"].length != 0){
-        obj[key] = obj[key]["value"]; 
+      else if (obj[key].type == "coord"){
+        if (obj[key].value !== null && key == "lat"){ //Only do once as calculation requires both fields
+          var radius = obj.radius;
+          coordType = obj[key].coordType;
+
+          //Do geodesic calulation to find bounding square from initialPoint
+          var initialPoint = {lat: obj.lat.value, lon: obj.lon.value};
+          var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
+
+          //restructure object
+          obj[key] = {};
+          obj[key].$gte = newPoints[0][coordType];
+          obj[key].$lte = newPoints[1][coordType];
+        }
+        else{
+          obj[key] = {};
+        }
       }
-      else{
-        obj[key] = {}
+      else{ //Treat everything else as simple field with value attribute
+        if (obj[key].value.length !== 0){ //ignore blank values
+          obj[key] = obj[key].value;
+        }
+        else{
+          obj[key] = {}
+        }
       }
-    }
   }
   }
-  //console.log(obj)
-  for (var key in obj){
+  for (key in obj){
+    //Remove empty objects
     if (Object.keys(obj[key]).length === 0){
       delete obj[key];
     }
   }
-  return obj
+  return obj;
 
 
   }
 
+/** Returns options object
+   * @param {object} req  request object
+   * @param {object} res  response object
+   * @returns {object} Array of option objects
+*/
 var getOptions = function(req,res){
   Options.findAll().then(function(options){
     res.send(options);
@@ -343,7 +365,8 @@ var getOptions = function(req,res){
 
 //sync the model with the database
 sequelize.sync().then(function (err) {
-	console.log("Synced");
+	  console.log("Synced");
+    //set routes
     app.post("/photo", getPhoto);
     app.get("/persons", getPersonStats);
     app.get("/options", getOptions);
@@ -397,7 +420,7 @@ sequelize.sync().then(function (err) {
           var initialPoint = {lat: obj["value"], lon: -0.1}
           var initialPoint = {lat:54.77524999999999,lon:-1.5857361512621808}
           var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
-        } 
+        }
         else{
           var initialPoint = {lat: 54, lon: obj["value"]}
           var initialPoint = {lat:54.77524999999999,lon:-1.5857361512621808}
@@ -416,7 +439,7 @@ sequelize.sync().then(function (err) {
     }
     else{
       if (obj["value"].length != 0){
-        obj = obj["value"]; 
+        obj = obj["value"];
       }
       else{
         obj = {}
@@ -426,4 +449,3 @@ sequelize.sync().then(function (err) {
   return obj;
 
 }*/
-
