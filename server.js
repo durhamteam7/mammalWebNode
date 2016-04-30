@@ -276,6 +276,7 @@ var getPersonStats = function(req,res){
 */
 var formQueryJSON = function(obj){
   for (var key in obj){
+    console.log(obj[key]);
     if (typeof obj[key] == "object" && !obj[key].hasOwnProperty("type")){
         //Recurse if the key is iself a valid object
         obj[key] = formQueryJSON(obj[key]);
@@ -314,7 +315,7 @@ var formQueryJSON = function(obj){
           obj[key].$lte = new Date(max);
         }
       }
-      else if (obj[key].type == "coord"){
+      else if (obj[key].type == "coord" || obj[key].type == "radius"){
         if (obj[key].value !== null && key == "lat" && typeof obj.radius !== "undefined"){ //Only do once as calculation requires both fields
           var radius = obj.radius.value;
           coordType = obj[key].coordType;
@@ -329,7 +330,6 @@ var formQueryJSON = function(obj){
           obj[key].$gte = newPoints[0][coordType];
           obj[key].$lte = newPoints[1][coordType];
 
-          console.log(obj[key]);
         }
         else{
           obj[key] = {};
@@ -348,7 +348,9 @@ var formQueryJSON = function(obj){
   }
   for (key in obj){
     //Remove empty objects
-    if (Object.keys(obj[key]).length === 0){
+    console.log("sdfsfQQQQQ",obj[key])
+    if (isEmpty(obj[key])){
+      console.log("REMOVED")
       delete obj[key];
     }
   }
@@ -378,6 +380,30 @@ sequelize.sync().then(function (err) {
     // initializing a port
     app.listen(port);
 });
+
+
+// Speed up calls to hasOwnProperty
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+function isEmpty(obj) {
+
+    // null and undefined are "empty"
+    if (obj == null) return true;
+
+    // Assume if it has a length property with a non-zero value
+    // that that property is correct.
+    if (obj.length > 0)    return false;
+    if (obj.length === 0)  return true;
+
+    // Otherwise, does it have any properties of its own?
+    // Note that this doesn't handle
+    // toString and valueOf enumeration bugs in IE < 9
+    for (var key in obj) {
+        if (hasOwnProperty.call(obj, key)) return false;
+    }
+
+    return true;
+}
 
 
 
