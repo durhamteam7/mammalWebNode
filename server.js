@@ -155,7 +155,8 @@ var PersonStats = sequelize.define("PersonStats", {
     species_rate: Sequelize.FLOAT,
     age_rate: Sequelize.FLOAT,
     gender_rate: Sequelize.FLOAT,
-    number_rate: Sequelize.FLOAT
+    number_rate: Sequelize.FLOAT,
+    number_of_classifications: Sequelize.INTEGER
 });
 
 //Specify relations
@@ -314,25 +315,29 @@ var formQueryJSON = function(obj){
         }
       }
       else if (obj[key].type == "coord"){
-        if (obj[key].value !== null && key == "lat"){ //Only do once as calculation requires both fields
-          var radius = obj.radius;
+        if (obj[key].value !== null && key == "lat" && typeof obj.radius !== "undefined"){ //Only do once as calculation requires both fields
+          var radius = obj.radius.value;
           coordType = obj[key].coordType;
 
           //Do geodesic calulation to find bounding square from initialPoint
           var initialPoint = {lat: obj.lat.value, lon: obj.lon.value};
+          console.log(initialPoint,radius);
           var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
-
+          console.log(newPoints);
           //restructure object
           obj[key] = {};
           obj[key].$gte = newPoints[0][coordType];
           obj[key].$lte = newPoints[1][coordType];
+
+          console.log(obj[key]);
         }
         else{
           obj[key] = {};
         }
       }
       else{ //Treat everything else as simple field with value attribute
-        if (obj[key].value.length !== 0){ //ignore blank values
+        console.log(key,obj[key].value);
+        if (obj[key].value && obj[key].value.length !== 0){ //ignore blank values
           obj[key] = obj[key].value;
         }
         else{
