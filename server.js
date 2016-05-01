@@ -182,13 +182,21 @@ var getPhoto = function(req,res){
   }
 
   //Hide unclassified images
-
-  if (req.body.Classification == undefined){
+  console.log("speciesBefore",req.body);
+  if (req.body.Classification === undefined){
     req.body.Classification = {};
     req.body.Classification.classification_id = {$ne: null};
+    req.body.Classification.species = {$notIn:[86,96,97]};
   }
   else{
-    if(!req.body.Classification.species == undefined){
+    console.log("Classificion defined");
+    if(req.body.Classification.species === undefined){
+      console.log("Classificion undefined");
+      req.body.Classification.species = {};
+      req.body.Classification.species = {$notIn:[86,96,97]};
+    }
+    else{
+      console.log("Classificion.species defined");
       req.body.Classification.species.$in = req.body.Classification.species;
       req.body.Classification.species.$notIn = [86,96,97];
     }
@@ -198,7 +206,7 @@ var getPhoto = function(req,res){
 
 
   //classification.$notIn = [86,96,97]; //Remove noAnimal, Don't know, Like
-  console.log(req.body.Classification.species);
+  //console.log(req.body.Classification.species);
   //req.body.Classification.species = classification;
 
 
