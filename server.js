@@ -182,18 +182,24 @@ var getPhoto = function(req,res){
   }
 
   //Hide unclassified images
-  classification = {};
-  if(!req.body.Classification){
-    req.body.Classification = {
-      classification_id:{$ne: null}
-    };
+
+  if (req.body.Classification == undefined){
+    req.body.Classification = {species:{}};
+    req.body.Classification.classification_id = {$ne: null};
   }
   else{
-    classification.$in = req.body.Classification.species;
+    req.body.Classification.species.$in = req.body.Classification.species;
+  }
+  if(req.body.Classification.species == undefined){
+    req.body.Classification.species = {};
   }
 
-  //classification.$notIn = [86,96,97]; //Remove blank and unknown
-  //console.log();
+  req.body.Classification.species.$notIn = [86,96,97];
+
+
+
+  //classification.$notIn = [86,96,97]; //Remove noAnimal, Don't know, Like
+  console.log(req.body.Classification.species);
   //req.body.Classification.species = classification;
 
 
