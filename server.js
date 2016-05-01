@@ -123,7 +123,8 @@ var Site = sequelize.define("Site", {
    camera_height: Sequelize.INTEGER,
    placement_id: Sequelize.INTEGER,
    lat: Sequelize.FLOAT,
-   lon: Sequelize.FLOAT
+   lon: Sequelize.FLOAT,
+   grid_ref: Sequelize.STRING
 });
 
 var Animal = sequelize.define("Animal", {
@@ -191,6 +192,11 @@ var getPhoto = function(req,res){
     classification.$in = req.body.Classification.species;
   }
 
+  //classification.$notIn = [86,96,97]; //Remove blank and unknown
+  //console.log();
+  //req.body.Classification.species = classification;
+
+
   //Deal with parameter for switching between sequence and photo
   if ((req.query.hasOwnProperty("sequence") && req.query.sequence == "true")){
     console.log("SEQUENCE MODE");
@@ -201,9 +207,7 @@ var getPhoto = function(req,res){
     req.body.Photo.sequence_num = 1;
   }
 
-  classification.$notIn = [86,96,97]; //Remove blank and unknown
-  req.body.Classification.species = classification;
-
+  console.log(req.body);
   //Build query JSON
   queryOptions = {
     where: req.body.Photo,
