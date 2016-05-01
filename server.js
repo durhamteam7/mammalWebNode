@@ -176,7 +176,7 @@ var AlgorithmSettings = sequelize.define("AlgorithmSettings", {
     blank_condition: Sequelize.INTEGER,
     consensus_condition: Sequelize.INTEGER,
     complete_condition: Sequelize.INTEGER,
-    agreement_condition: Sequelize.INTEGER
+    agreement_condition: Sequelize.FLOAT
 });
 
 //Specify relations
