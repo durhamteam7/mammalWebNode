@@ -160,10 +160,19 @@ var PersonStats = sequelize.define("PersonStats", {
     number_of_classifications: Sequelize.INTEGER
 });
 
+var Favourites = sequelize.define("Favourites", {
+    person_id: {
+      type:Sequelize.INTEGER,
+      primaryKey: true
+    },
+    photo_id: Sequelize.INTEGER,
+});
+
 //Specify relations
 Photo.hasMany(Classification,{foreignKey: 'photo_id',otherKey:'photo_id'});
 Photo.hasMany(Animal,{foreignKey: 'photo_id',otherKey: 'photo_id'});
 Photo.belongsTo(Site,{foreignKey: 'site_id'});
+Photo.hasMany(Favourites,{foreignKey: 'photo_id',otherKey: 'photo_id'});
 
 
 
@@ -203,13 +212,6 @@ var getPhoto = function(req,res){
   }
 
 
-
-
-  //classification.$notIn = [86,96,97]; //Remove noAnimal, Don't know, Like
-  //console.log(req.body.Classification.species);
-  //req.body.Classification.species = classification;
-
-
   //Deal with parameter for switching between sequence and photo
   if ((req.query.hasOwnProperty("sequence") && req.query.sequence == "true")){
     console.log("SEQUENCE MODE");
@@ -226,7 +228,8 @@ var getPhoto = function(req,res){
     where: req.body.Photo,
     include: [
             {model: Site,where:req.body.Site},
-            {model: Classification,where:req.body.Classification}
+            {model: Classification,where:req.body.Classification},
+            {model: Favourites}
         ],
     offset: offsetValue,
     limit: limitValue
