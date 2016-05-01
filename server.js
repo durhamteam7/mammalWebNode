@@ -168,6 +168,17 @@ var Favourites = sequelize.define("Favourites", {
     photo_id: Sequelize.INTEGER,
 });
 
+var AlgorithmSettings = sequelize.define("AlgorithmSettings", {
+    settings_id: {
+      type:Sequelize.INTEGER,
+      primaryKey: true
+    },
+    blank_condition: Sequelize.INTEGER,
+    consensus_condition: Sequelize.INTEGER,
+    complete_condition: Sequelize.INTEGER,
+    agreement_condition: Sequelize.INTEGER
+});
+
 //Specify relations
 Photo.hasMany(Classification,{foreignKey: 'photo_id',otherKey:'photo_id'});
 Photo.hasMany(Animal,{foreignKey: 'photo_id',otherKey: 'photo_id'});
@@ -390,6 +401,13 @@ var getOptions = function(req,res){
   });
 };
 
+
+var getAlgorithmSettings = function(req,res){
+  AlgorithmSettings.findAll().then(function(settings){
+    res.send(settings);
+  });
+};
+
 //sync the model with the database
 sequelize.sync().then(function (err) {
 	  console.log("Synced");
@@ -397,6 +415,7 @@ sequelize.sync().then(function (err) {
     app.post("/photo", getPhoto);
     app.get("/persons", getPersonStats);
     app.get("/options", getOptions);
+    app.get("/algorithmSettings",getAlgorithmSettings);
     // initializing a port
     app.listen(port);
 });
