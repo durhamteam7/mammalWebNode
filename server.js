@@ -161,11 +161,8 @@ var PersonStats = sequelize.define("PersonStats", {
 });
 
 var Favourites = sequelize.define("Favourites", {
-    person_id: {
-      type:Sequelize.INTEGER,
-      primaryKey: true
-    },
-    photo_id: Sequelize.INTEGER,
+    person_id: Sequelize.INTEGER,
+    photo_id: Sequelize.INTEGER
 });
 
 var AlgorithmSettings = sequelize.define("AlgorithmSettings", {
@@ -197,7 +194,6 @@ var getPhoto = function(req,res){
   limitValue = null;
   if (!(req.query.hasOwnProperty("output") && req.query.output == "csv") && (req.query.hasOwnProperty("pageNum")&& req.query.hasOwnProperty("pageSize"))){
     offsetValue = (parseInt(req.query.pageNum)-1)*parseInt(req.query.pageSize);
-    console.log(req.query.pageNum,req.query.pageSize);
     limitValue = parseInt(req.query.pageSize);
   }
 
@@ -233,7 +229,6 @@ var getPhoto = function(req,res){
     req.body.Photo.sequence_num = 1;
   }
 
-  console.log(req.body);
   //Build query JSON
   queryOptions = {
     where: req.body.Photo,
@@ -307,7 +302,7 @@ var getPersonStats = function(req,res){
 */
 var formQueryJSON = function(obj){
   for (var key in obj){
-    console.log(obj[key]);
+    //console.log(obj[key]);
     if (typeof obj[key] == "object" && !obj[key].hasOwnProperty("type")){
         //Recurse if the key is iself a valid object
         obj[key] = formQueryJSON(obj[key]);
@@ -353,9 +348,9 @@ var formQueryJSON = function(obj){
 
           //Do geodesic calulation to find bounding square from initialPoint
           var initialPoint = {lat: obj.lat.value, lon: obj.lon.value};
-          console.log(initialPoint,radius);
+          //console.log(initialPoint,radius);
           var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
-          console.log(newPoints);
+          //console.log(newPoints);
           //restructure object
           obj[key] = {};
           obj[key].$gte = newPoints[0][coordType];
@@ -367,7 +362,6 @@ var formQueryJSON = function(obj){
         }
       }
       else{ //Treat everything else as simple field with value attribute
-        console.log(key,obj[key].value);
         if (obj[key].value && obj[key].value.length !== 0){ //ignore blank values
           obj[key] = obj[key].value;
         }
@@ -379,9 +373,7 @@ var formQueryJSON = function(obj){
   }
   for (key in obj){
     //Remove empty objects
-    console.log("sdfsfQQQQQ",obj[key])
     if (isEmpty(obj[key])){
-      console.log("REMOVED")
       delete obj[key];
     }
   }
@@ -403,9 +395,38 @@ var getOptions = function(req,res){
 
 
 var getAlgorithmSettings = function(req,res){
+  console.log("getting settings")
   AlgorithmSettings.findAll().then(function(settings){
     res.send(settings);
   });
+};
+
+var setAlgorithmSettings = function(req,res){
+  console.log("setting settings");
+  AlgorithmSettings.update(req.body,
+  {
+    where: {settings_id:1}
+  })
+  .then(function (result) {
+    res.send(200);
+  }, function(rejectedPromiseError){
+    console.log("Update settings failed - cannot find row");
+  });
+
+};
+
+var setFavourite = function(req,res){
+  if (req.query.isSet=='true'){
+    //Add as favourite
+    Favourites.create(req.body).then(function(){res.send(200)});
+  }
+  else{
+    //Remove as favourite
+    Favourites.destroy({
+      where: req.body
+    }).then(function(){res.send(200)});
+
+  }
 };
 
 //sync the model with the database
@@ -416,6 +437,8 @@ sequelize.sync().then(function (err) {
     app.get("/persons", getPersonStats);
     app.get("/options", getOptions);
     app.get("/algorithmSettings",getAlgorithmSettings);
+    app.post("/algorithmSettings",setAlgorithmSettings);
+    app.post("/favourite",setFavourite);
     // initializing a port
     app.listen(port);
 });
