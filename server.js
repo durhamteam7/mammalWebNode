@@ -188,6 +188,7 @@ var getPhoto = function(req,res){
 
 
   formQueryJSON(req.body);
+  console.log(req.body.Site)
 
   //Set paging parameters if they were passed
   offsetValue = null;
@@ -198,21 +199,21 @@ var getPhoto = function(req,res){
   }
 
   //Hide unclassified images
-  console.log("speciesBefore",req.body);
+  //console.log("speciesBefore",req.body);
   if (req.body.Classification === undefined){
     req.body.Classification = {};
     req.body.Classification.classification_id = {$ne: null};
     req.body.Classification.species = {$notIn:[86,96,97]};
   }
   else{
-    console.log("Classificion defined");
+    //console.log("Classificion defined");
     if(req.body.Classification.species === undefined){
-      console.log("Classificion undefined");
+      //console.log("Classificion undefined");
       req.body.Classification.species = {};
       req.body.Classification.species = {$notIn:[86,96,97]};
     }
     else{
-      console.log("Classificion.species defined");
+      //console.log("Classificion.species defined");
       req.body.Classification.species.$in = req.body.Classification.species;
       req.body.Classification.species.$notIn = [86,96,97];
     }
@@ -229,17 +230,29 @@ var getPhoto = function(req,res){
     req.body.Photo.sequence_num = 1;
   }
 
+
   //Build query JSON
   queryOptions = {
     where: req.body.Photo,
     include: [
             {model: Site,where:req.body.Site},
-            {model: Classification,where:req.body.Classification},
-            {model: Favourites}
-        ],
+            {model: Classification,where:req.body.Classification}
+          ],
     offset: offsetValue,
     limit: limitValue
   };
+
+  //add favourites link
+  if (req.query.person_id !== undefined){
+    console.log("Set favourites");
+    queryOptions.include.push({model: Favourites,where:{"person_id":req.query.person_id}})
+
+  }
+  else{
+    queryOptions.include.push({model: Favourites})
+  }
+
+  //console.log(queryOptions)
 
   //Run sequlize query
 	Photo.findAndCountAll(queryOptions).then(function(result) {
@@ -301,8 +314,9 @@ var getPersonStats = function(req,res){
    * @returns {object} sequalize query object
 */
 var formQueryJSON = function(obj){
+  objOld = JSON.parse(JSON.stringify(obj));
   for (var key in obj){
-    //console.log(obj[key]);
+    //console.log(key,obj[key]);
     if (typeof obj[key] == "object" && !obj[key].hasOwnProperty("type")){
         //Recurse if the key is iself a valid object
         obj[key] = formQueryJSON(obj[key]);
@@ -342,19 +356,23 @@ var formQueryJSON = function(obj){
         }
       }
       else if (obj[key].type == "coord" || obj[key].type == "radius"){
-        if (obj[key].value !== null && key == "lat" && typeof obj.radius !== "undefined"){ //Only do once as calculation requires both fields
-          var radius = obj.radius.value;
+        if (obj[key].value !== null && key=="lon" && typeof obj.radius !== "undefined" && typeof obj.radius.value !== "undefined" && obj.radius.value !== ""){ //Only do once as calculation requires both fields
+          var radius = obj.radius.value*1000;
+          console.log("radius",radius);
           coordType = obj[key].coordType;
 
           //Do geodesic calulation to find bounding square from initialPoint
-          var initialPoint = {lat: obj.lat.value, lon: obj.lon.value};
-          //console.log(initialPoint,radius);
+          var initialPoint = {lat: objOld.lat.value, lon: objOld.lon.value};
+          console.log("IP",initialPoint,radius);
           var newPoints = geolib.getBoundsOfDistance(initialPoint,radius);
-          //console.log(newPoints);
           //restructure object
-          obj[key] = {};
-          obj[key].$gte = newPoints[0][coordType];
-          obj[key].$lte = newPoints[1][coordType];
+          obj["lon"] = {};
+          obj["lon"].$gte = newPoints[0][coordType];
+          obj["lon"].$lte = newPoints[1][coordType];
+
+          obj["lat"] = {};
+          obj["lat"].$gte = newPoints[0]["latitude"];
+          obj["lat"].$lte = newPoints[1]["latitude"];
 
         }
         else{
